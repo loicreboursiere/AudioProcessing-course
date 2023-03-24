@@ -3,7 +3,7 @@
 Here is the code material on which is based a 12h Audio Processing course based on [JUCE](http://juce.com).
 The different steps of this course can be accessed through the following tags :
 
-1. step-0 : base code for our course, mainly based on [Looping audio using the AudioSampleBuffer class](https://docs.juce.com/master/tutorial_looping_audio_sample_buffer.html) JUCE turorial, with few adjustments.
+1. step-0 : base code for our course. Basically it is a file player. It has been mainly based on [Looping audio using the AudioSampleBuffer class](https://docs.juce.com/master/tutorial_looping_audio_sample_buffer.html) JUCE turorial, with few adjustments.
 
 
 ## Code

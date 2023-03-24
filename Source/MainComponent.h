@@ -20,12 +20,10 @@ public:
 private:
   
     void openButtonClicked();
-    void loopButtonClicked();
-
+    
     //==========================================================================
     juce::TextButton openButton;
-    juce::ToggleButton loopButton { "Loop" };
-
+    
     std::unique_ptr<juce::FileChooser> chooser;
 
     juce::AudioFormatManager formatManager;

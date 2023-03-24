@@ -7,9 +7,6 @@ MainContentComponent::MainContentComponent()
     openButton.setButtonText("Open...");
     openButton.onClick = [this] { openButtonClicked(); };
 
-    addAndMakeVisible( loopButton );
-    loopButton.onClick = [this] { loopButtonClicked(); };
-
     setSize(300, 200);
 
     formatManager.registerBasicFormats();
@@ -72,7 +69,6 @@ void MainContentComponent::releaseResources()
 void MainContentComponent::resized()
 {
     openButton.setBounds(10, 10, getWidth() - 20, 20);
-    loopButton.setBounds(10, 40, getWidth() - 20, 20);
 }
 
 void MainContentComponent::openButtonClicked()
@@ -110,9 +106,4 @@ void MainContentComponent::openButtonClicked()
     
             }
         });
-}
-
-void MainContentComponent::loopButtonClicked()
-{
-    shutdownAudio();
 }
