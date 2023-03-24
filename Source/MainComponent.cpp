@@ -40,7 +40,7 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
     auto outputSamplesRemaining = bufferToFill.numSamples;                                  // [8]
     auto outputSamplesOffset = bufferToFill.startSample;                                    // [9]
 
-    while (outputSamplesRemaining > 0)
+    while (outputSamplesRemaining > 0 && position <= fileBuffer.getNumSamples() )
     {
         auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;                // [10]
         auto samplesThisTime = juce::jmin(outputSamplesRemaining, bufferSamplesRemaining); // [11]
@@ -59,8 +59,6 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
         outputSamplesOffset += samplesThisTime;                                             // [14]
         position += samplesThisTime;                                                        // [15]
 
-        if (position == fileBuffer.getNumSamples())
-            position = 0;                                                                   // [16]
     }
 }
 
@@ -81,9 +79,9 @@ void MainContentComponent::openButtonClicked()
 {
     shutdownAudio();                                                                            // [1]
 
-    chooser = std::make_unique<juce::FileChooser>("Select a Wave file shorter than 2 seconds to play...",
+    chooser = std::make_unique<juce::FileChooser>("Select a sound file",
         juce::File{},
-        "*.wav");
+        "*.wav, *.mp3");
     auto chooserFlags = juce::FileBrowserComponent::openMode
         | juce::FileBrowserComponent::canSelectFiles;
 
@@ -98,24 +96,18 @@ void MainContentComponent::openButtonClicked()
 
             if (reader.get() != nullptr)
             {
-                auto duration = (float)reader->lengthInSamples / reader->sampleRate;               // [3]
+                //auto duration = (float)reader->lengthInSamples / reader->sampleRate;               // [3]
 
-                if (duration < 2)
-                {
-                    fileBuffer.setSize((int)reader->numChannels, (int)reader->lengthInSamples);  // [4]
-                    reader->read(&fileBuffer,                                                      // [5]
-                        0,                                                                //  [5.1]
-                        (int)reader->lengthInSamples,                                    //  [5.2]
-                        0,                                                                //  [5.3]
-                        true,                                                             //  [5.4]
-                        true);                                                            //  [5.5]
-                    position = 0;                                                                   // [6]
-                    setAudioChannels(0, (int)reader->numChannels);                                // [7]
-                }
-                else
-                {
-                    // handle the error that the file is 2 seconds or longer..
-                }
+                fileBuffer.setSize((int)reader->numChannels, (int)reader->lengthInSamples);  // [4]
+                reader->read(&fileBuffer,                                                      // [5]
+                    0,                                                                //  [5.1]
+                    (int)reader->lengthInSamples,                                    //  [5.2]
+                    0,                                                                //  [5.3]
+                    true,                                                             //  [5.4]
+                    true);                                                            //  [5.5]
+                position = 0;                                                                   // [6]
+                setAudioChannels(0, (int)reader->numChannels);                                // [7]
+    
             }
         });
 }
