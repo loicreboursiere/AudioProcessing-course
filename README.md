@@ -45,7 +45,8 @@ chooser = std::make_unique<juce::FileChooser>("Select a sound file",
 This option allows .mp3 to be displayed is the open file browser. in order for this to fully work, the mp3 option must also be activated in the options of the juce_file_format module through the Projucer.
 
 ![mp3 enabled option of the juce_audio_formats in the projucer](img/projucer_mp3_format_enabled.png)
-<img src="img/projucer_mp3_format_enabled.png" alt = "mp3 enabled option of the juce_audio_formats in the projucer" width = 400 height = 24>
+<img src="img/projucer_mp3_format_enabled.png" alt = "mp3 enabled option of the juce_audio_formats in the projucer" width = 250 height = 15>
+
 2. The `if` condition limiting the audio file duration to 2s has been removed. Again, more on why this limitation on the page of the tutorial.
 
 
