@@ -6,10 +6,14 @@ MainContentComponent::MainContentComponent()
     addAndMakeVisible(openButton);
     openButton.setButtonText("Open...");
     openButton.onClick = [this] { openButtonClicked(); };
+    addAndMakeVisible(loopToggle);
+    loopToggle.onClick = [this] { loopToggle.getToggleState() ? isLooping = true : isLooping = false; };
+
 
     setSize(300, 200);
 
     formatManager.registerBasicFormats();
+
 }
 
 MainContentComponent::~MainContentComponent() 
@@ -54,9 +58,17 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
 
         outputSamplesRemaining -= samplesThisTime;                                          // [13]
         outputSamplesOffset += samplesThisTime;                                             // [14]
-        position += samplesThisTime;                                                        // [15]
-
+        position += samplesThisTime; 
+                                                       
+        if (isLooping)
+        {
+            if (position == fileBuffer.getNumSamples())
+                position = 0;
+        }
+        
     }
+
+    
 }
 
 
@@ -68,7 +80,8 @@ void MainContentComponent::releaseResources()
 
 void MainContentComponent::resized()
 {
-    openButton.setBounds(10, 10, getWidth() - 20, 20);
+    openButton.setBounds(10, 10, getWidth() - 80, 20);
+    loopToggle.setBounds(getWidth() - 60, 10, 50, 20);
 }
 
 void MainContentComponent::openButtonClicked()

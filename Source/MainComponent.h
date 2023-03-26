@@ -23,12 +23,15 @@ private:
     
     //==========================================================================
     juce::TextButton openButton;
-    
+    juce::ToggleButton loopToggle{ "Loop" };
+
     std::unique_ptr<juce::FileChooser> chooser;
 
     juce::AudioFormatManager formatManager;
     juce::AudioSampleBuffer fileBuffer;
     int position;
+
+    bool isLooping;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent)
 };
