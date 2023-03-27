@@ -4,12 +4,30 @@
 MainContentComponent::MainContentComponent()
 {
     addAndMakeVisible(openButton);
-    openButton.setButtonText("Open...");
-    openButton.onClick = [this] { openButtonClicked(); };
     addAndMakeVisible(loopToggle);
+    addAndMakeVisible(loopStartTE);
+    addAndMakeVisible(loopStopTE);
+    addAndMakeVisible(loopStartLabel);
+    addAndMakeVisible(loopStopLabel);
+
+    openButton.setButtonText("Open...");
+    loopStartLabel.setText("Loop start : ", juce::dontSendNotification);
+    loopStopLabel.setText("Loop stop : ", juce::dontSendNotification);
+
+    loopStartTE.setEditable(true); 
+    loopStopTE.setEditable(true);
+    //durationMinTE.setText("10", juce::dontSendNotification);
+
+    loopStartTE.setJustificationType(juce::Justification::left);
+    loopStopTE.setJustificationType(juce::Justification::left);
+
+    loopStartTE.setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+    loopStopTE.setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+
+    openButton.onClick = [this] { openButtonClicked(); };
     loopToggle.onClick = [this] { loopToggle.getToggleState() ? isLooping = true : isLooping = false; };
-
-
+    loopStartTE.onTextChange = [this] { loopStart = loopStartTE.getText().getIntValue(); position = loopStart; };
+    loopStopTE.onTextChange = [this] { loopStop = loopStopTE.getText().getIntValue(); };
     setSize(300, 200);
 
     formatManager.registerBasicFormats();
@@ -41,9 +59,13 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
     auto outputSamplesRemaining = bufferToFill.numSamples;                                  // [8]
     auto outputSamplesOffset = bufferToFill.startSample;                                    // [9]
 
-    while (outputSamplesRemaining > 0 && position <= fileBuffer.getNumSamples() )
+    auto loopSize = loopStop - loopStart;
+
+    while (outputSamplesRemaining > 0 && position <= loopSize )
     {
-        auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;                // [10]
+        //auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;                // [10]
+        
+        auto bufferSamplesRemaining = loopSize - position;
         auto samplesThisTime = juce::jmin(outputSamplesRemaining, bufferSamplesRemaining); // [11]
 
         for (auto channel = 0; channel < numOutputChannels; ++channel)
@@ -63,7 +85,7 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
         if (isLooping)
         {
             if (position == fileBuffer.getNumSamples())
-                position = 0;
+                position = loopStart;
         }
         
     }
@@ -82,6 +104,10 @@ void MainContentComponent::resized()
 {
     openButton.setBounds(10, 10, getWidth() - 80, 20);
     loopToggle.setBounds(getWidth() - 60, 10, 50, 20);
+    loopStartLabel.setBounds(10, 40, 100, 20);
+    loopStartTE.setBounds(110, 40, 100, 20);
+    loopStopLabel.setBounds(10, 70, 100, 20);
+    loopStopTE.setBounds(110, 70, 100, 20);
 }
 
 void MainContentComponent::openButtonClicked()
@@ -116,7 +142,11 @@ void MainContentComponent::openButtonClicked()
                     true);                                                            //  [5.5]
                 position = 0;                                                                   // [6]
                 setAudioChannels(0, (int)reader->numChannels);                                // [7]
-    
+                
+                loopStart = 0;
+                loopStop = reader->lengthInSamples;
+                loopStartTE.setText( juce::String(loopStart), juce::dontSendNotification);
+                loopStopTE .setText( juce::String(loopStop), juce::dontSendNotification );
             }
         });
 }

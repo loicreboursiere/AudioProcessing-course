@@ -3,6 +3,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <string.h>
 //==============================================================================
 class MainContentComponent : public juce::AudioAppComponent
 {
@@ -20,10 +21,17 @@ public:
 private:
   
     void openButtonClicked();
+
+    void updateLoopSize();
     
     //==========================================================================
     juce::TextButton openButton;
-    juce::ToggleButton loopToggle{ "Loop" };
+    juce::ToggleButton loopToggle { "Loop" };
+
+    juce::Label loopStartTE;
+    juce::Label loopStopTE;
+    juce::Label loopStartLabel { "Loop Start" };
+    juce::Label loopStopLabel  { "Loop Stop" };
 
     std::unique_ptr<juce::FileChooser> chooser;
 
@@ -32,6 +40,9 @@ private:
     int position;
 
     bool isLooping;
+    int loopStart;
+    int loopStop;
+    int loopSize;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent)
 };
