@@ -27,7 +27,7 @@ MainContentComponent::MainContentComponent()
     openButton.onClick = [this] { openButtonClicked(); };
     loopToggle.onClick = [this] { loopToggle.getToggleState() ? isLooping = true : isLooping = false; };
     loopStartTE.onTextChange = [this] { loopStart = loopStartTE.getText().getIntValue(); position = loopStart; };
-    loopStopTE.onTextChange = [this] { loopStop = loopStopTE.getText().getIntValue(); };
+    loopStopTE.onTextChange = [this] { loopStop = loopStopTE.getText().getIntValue(); if (position > loopStop) position = loopStart; };
     setSize(300, 200);
 
     formatManager.registerBasicFormats();
