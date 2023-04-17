@@ -5,33 +5,57 @@ MainContentComponent::MainContentComponent()
 {
     addAndMakeVisible(openButton);
     addAndMakeVisible(loopToggle);
-    addAndMakeVisible(loopStartTE);
-    addAndMakeVisible(loopStopTE);
-    addAndMakeVisible(loopStartLabel);
-    addAndMakeVisible(loopStopLabel);
+    addAndMakeVisible(startPointLabel);
+    addAndMakeVisible(durationLabel);
+    addAndMakeVisible(startPointTE);
+    addAndMakeVisible(durationTE);
+    addAndMakeVisible(makeGrainButton);
+    //addAndMakeVisible(metroLabel);
+    //addAndMakeVisible(metroTE);
+    //addAndMakeVisible(randomToggle);
+    addAndMakeVisible(loopStartFeedbackLabel);
+    addAndMakeVisible(loopStopFeedbackLabel);
+    addAndMakeVisible(loopStartFeedbackTE);
+    addAndMakeVisible(loopStopFeedbackTE);
+
+
+    startPointTE.setEditable(true);
+    durationTE.setEditable(true);
+    metroTE.setEditable(true);
 
     openButton.setButtonText("Open...");
-    loopStartLabel.setText("Loop start : ", juce::dontSendNotification);
-    loopStopLabel.setText("Loop stop : ", juce::dontSendNotification);
+    startPointLabel.setText("Start point", juce::dontSendNotification);
+    durationLabel.setText("Duration", juce::dontSendNotification);
+    startPointTE.setText("10", juce::dontSendNotification);
+    durationTE.setText("500", juce::dontSendNotification);
+    metroLabel.setText("Tempo", juce::dontSendNotification);
+    metroTE.setText("300", juce::dontSendNotification);
+    loopStartFeedbackLabel.setText("Loop start", juce::dontSendNotification);
+    loopStopFeedbackLabel.setText("Loop stop", juce::dontSendNotification);
+    loopStartFeedbackTE.setText("0", juce::dontSendNotification);
+    loopStopFeedbackTE.setText("0", juce::dontSendNotification);
 
-    loopStartTE.setEditable(true); 
-    loopStopTE.setEditable(true);
-    //durationMinTE.setText("10", juce::dontSendNotification);
 
-    loopStartTE.setJustificationType(juce::Justification::left);
-    loopStopTE.setJustificationType(juce::Justification::left);
+    startPointTE       .setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+    durationTE         .setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+    metroTE            .setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+    loopStartFeedbackTE.setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
+    loopStopFeedbackTE .setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
 
-    loopStartTE.setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
-    loopStopTE.setColour(juce::Label::outlineColourId, juce::Colours::darkorange);
 
-    openButton.onClick = [this] { openButtonClicked(); };
-    loopToggle.onClick = [this] { loopToggle.getToggleState() ? isLooping = true : isLooping = false; };
-    loopStartTE.onTextChange = [this] { loopStart = loopStartTE.getText().getIntValue(); position = loopStart; };
-    loopStopTE.onTextChange = [this] { loopStop = loopStopTE.getText().getIntValue(); if (position > loopStop) position = loopStart; };
-    setSize(300, 200);
+    ranges.start    = startPointTE.getText().getIntValue();
+    ranges.duration = durationTE.getText().getIntValue();
+
+    openButton.onClick        = [this] { openButtonClicked(); };
+    loopToggle.onClick        = [this] { isLooping = loopToggle.getToggleState(); };
+    startPointTE.onTextChange = [this] { ranges.start = startPointTE.getText().getIntValue(); };
+    durationTE.onTextChange   = [this] { ranges.duration = durationTE.getText().getIntValue(); };
+    
+    makeGrainButton.onClick   = [this] { makeGrain(); };
+
+    setSize(400, 200);
 
     formatManager.registerBasicFormats();
-
 }
 
 MainContentComponent::~MainContentComponent() 
@@ -49,6 +73,7 @@ void MainContentComponent::prepareToPlay (int samplesPerBlockExpected, double sa
     // but be careful - it will be called on the audio thread, not the GUI thread.
 
     // For more details, see the help for AudioProcessor::prepareToPlay()
+    this->sampleRate = sampleRate;
 }
 
 void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) 
@@ -59,13 +84,15 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
     auto outputSamplesRemaining = bufferToFill.numSamples;                                  // [8]
     auto outputSamplesOffset = bufferToFill.startSample;                                    // [9]
 
-    auto loopSize = loopStop - loopStart;
+    auto numSamplesInBlock = bufferToFill.buffer->getNumSamples();
 
-    while (outputSamplesRemaining > 0 && position <= loopSize )
+    //auto loopSize
+    //juce::AudioBuffer grain
+    
+    while (outputSamplesRemaining > 0 )//&& position <= currentGrain.duration_sample )//fileBuffer.getNumSamples() )
     {
         //auto bufferSamplesRemaining = fileBuffer.getNumSamples() - position;                // [10]
-        
-        auto bufferSamplesRemaining = loopSize - position;
+        auto bufferSamplesRemaining = ( currentGrain.duration_sample + currentGrain.start_sample ) - position;
         auto samplesThisTime = juce::jmin(outputSamplesRemaining, bufferSamplesRemaining); // [11]
 
         for (auto channel = 0; channel < numOutputChannels; ++channel)
@@ -80,17 +107,43 @@ void MainContentComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo&
 
         outputSamplesRemaining -= samplesThisTime;                                          // [13]
         outputSamplesOffset += samplesThisTime;                                             // [14]
-        position += samplesThisTime; 
-                                                       
-        if (isLooping)
-        {
-            if (position == fileBuffer.getNumSamples())
-                position = loopStart;
-        }
-        
-    }
+        position += samplesThisTime;                                                        // [15]
 
+        if ( isLooping )
+        {
+            //if (position == fileBuffer.getNumSamples())
+            //    position = 0;
+            if (position == currentGrain.stop_sample)
+                position = currentGrain.start_sample;
+        }
+    }
     
+    
+    /*
+    for (int sample = 0; sample < numSamplesInBlock; ++sample)
+    {
+        for (int channel = 0; channel < bufferToFill.buffer->getNumChannels(); ++channel)
+        {
+            const float* fileData = fileBuffer.getReadPointer(channel % fileBuffer.getNumChannels());
+            float* channelData = bufferToFill.buffer->getWritePointer(channel);
+            if (position > fileBuffer.getNumSamples())
+            {
+                position = fileBuffer.getNumSamples();
+                DBG("filePosition trimed back to numSamplesInFile");
+            }
+            channelData[sample] = fileData[position];
+        }
+
+        if (position < currentGrain.stop_sample)
+        {
+            ++position;
+        }
+        else if (isLooping)
+        {
+            position = currentGrain.start_sample;
+        }
+    }
+    */
 }
 
 
@@ -102,12 +155,24 @@ void MainContentComponent::releaseResources()
 
 void MainContentComponent::resized()
 {
-    openButton.setBounds(10, 10, getWidth() - 80, 20);
-    loopToggle.setBounds(getWidth() - 60, 10, 50, 20);
-    loopStartLabel.setBounds(10, 40, 100, 20);
-    loopStartTE.setBounds(110, 40, 100, 20);
-    loopStopLabel.setBounds(10, 70, 100, 20);
-    loopStopTE.setBounds(110, 70, 100, 20);
+    openButton.setBounds( 10, 10, getWidth() - 120, 20 );
+    loopToggle.setBounds( getWidth() - 110, 10, 100, 20 );
+    
+    startPointLabel.setBounds(10, 50, 70, 20);
+    startPointTE.setBounds(80, 50, 60, 20);
+    durationLabel.setBounds(140, 50, 70, 20);
+    durationTE.setBounds(210, 50, 60, 20);
+    makeGrainButton.setBounds(280, 50, 50, 20);
+
+    loopStartFeedbackLabel.setBounds(10, 85, 70, 20);
+    loopStartFeedbackTE.setBounds(80, 85, 60, 20);
+    loopStopFeedbackLabel.setBounds(140, 85, 70, 20);
+    loopStopFeedbackTE.setBounds(210, 85, 60, 20);
+
+    metroLabel.setBounds(10, 120, 50, 20);
+    metroTE.setBounds( 70, 120, 60, 20 );
+    randomToggle.setBounds(130, 120, 140, 20);
+
 }
 
 void MainContentComponent::openButtonClicked()
@@ -142,11 +207,55 @@ void MainContentComponent::openButtonClicked()
                     true);                                                            //  [5.5]
                 position = 0;                                                                   // [6]
                 setAudioChannels(0, (int)reader->numChannels);                                // [7]
-                
-                loopStart = 0;
-                loopStop = reader->lengthInSamples;
-                loopStartTE.setText( juce::String(loopStart), juce::dontSendNotification);
-                loopStopTE .setText( juce::String(loopStop), juce::dontSendNotification );
+                initGrainWithSF(fileBuffer.getNumSamples());
             }
         });
+    
+}
+/**
+* Create random start and duration of the grain and feed currentGrain struct
+*/
+void MainContentComponent::makeGrain()
+{
+    // Feed currentGrain struct
+    currentGrain.duration_ms     = juce::Random::getSystemRandom().nextInt( ranges.duration );
+    //currentGrain.start_ms = juce::Random::getSystemRandom().nextInt( samples2Ms(fileBuffer.getNumSamples(), sampleRate) - ranges.duration );
+    currentGrain.start_ms        = juce::jmin(
+        juce::Random::getSystemRandom().nextInt(ranges.start),
+        samples2Ms(fileBuffer.getNumSamples(), sampleRate) - ranges.duration
+        );
+    currentGrain.stop_ms         = currentGrain.start_ms + currentGrain.duration_ms;
+    currentGrain.start_sample    = ms2Samples(currentGrain.start_ms, sampleRate );
+    currentGrain.stop_sample     = ms2Samples(currentGrain.stop_ms, sampleRate);
+    currentGrain.duration_sample = ms2Samples(currentGrain.duration_ms, sampleRate);
+
+    // UpdateGUI
+    loopStartFeedbackTE          .setText(juce::String(currentGrain.start_ms), juce::dontSendNotification);
+    loopStopFeedbackTE           .setText(juce::String(currentGrain.stop_ms), juce::dontSendNotification);
+
+    // Update position for processing 
+    position                     = currentGrain.start_sample;
+
+}
+
+void MainContentComponent::initGrainWithSF(int soundFileSampleSize)
+{
+    currentGrain.start_ms = 0;
+    currentGrain.start_sample = 0;
+    currentGrain.duration_sample = soundFileSampleSize;
+    currentGrain.duration_ms = samples2Ms(currentGrain.duration_sample, sampleRate);
+    currentGrain.stop_ms = currentGrain.start_ms + currentGrain.duration_ms;
+    currentGrain.stop_sample = currentGrain.start_sample + currentGrain.duration_sample;
+
+}
+
+
+int MainContentComponent::ms2Samples(int ms, int sampleRate)
+{
+    return (int) (sampleRate * ms / 1000);
+}
+
+int MainContentComponent::samples2Ms(int samples, int sampleRate)
+{
+    return (int)(samples / sampleRate * 1000);
 }
